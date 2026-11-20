@@ -144,6 +144,57 @@ h6 {
     font-size: 0.75rem;
 }
 
+.controls {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.controls label, .controls select, .meta select, .meta input, .add select, .add input[type="date"] {
+    font-size: 0.7rem;
+}
+
+.add select, .add input[type="date"] {
+    margin-left: 0.5rem;
+    height: 2rem;
+}
+
+.meta {
+    gap: 0.4rem;
+    width: 22%;
+}
+
+.badge {
+    padding: 0.05rem 0.5rem;
+    border-radius: 1rem;
+    font-size: 0.65rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+.badge-alta { background-color: #D64545; }
+.badge-media { background-color: #E0A526; }
+.badge-baixa { background-color: #3FA672; }
+
+.notCompletedToDos.overdue,
+.notCompletedToDos.overdue .todoContent,
+.notCompletedToDos.overdue .metaDue {
+    color: #D64545;
+}
+
+.notCompletedToDos.overdue {
+    background-color: #FDF0F0;
+    border-radius: 0.5rem;
+}
+
+.overdueTag {
+    color: #D64545;
+    font-size: 0.6rem;
+    font-weight: bold;
+}
+
 .notFoundContainer {
     position: absolute;
     top: 50%;

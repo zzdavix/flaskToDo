@@ -9,7 +9,6 @@ cursor = connection.cursor()
 
 try:
     cursor.execute("""SELECT * FROM todos; """).fetchall()
-    connection.close()
 except:
     todosTable = """
     CREATE TABLE "todos" (
@@ -24,4 +23,13 @@ except:
     );"""
     cursor.execute(todosTable)
     connection.commit()
-    connection.close()
+
+# Migração (Atividade A): adiciona prioridade e data de vencimento em bancos
+# existentes. Idempotente: só altera a tabela se as colunas ainda não existirem.
+existingColumns = [row[1] for row in cursor.execute("PRAGMA table_info(todos)")]
+if "priority" not in existingColumns:
+    cursor.execute("ALTER TABLE todos ADD COLUMN priority TEXT DEFAULT 'media'")
+if "dueDate" not in existingColumns:
+    cursor.execute("ALTER TABLE todos ADD COLUMN dueDate TEXT")
+connection.commit()
+connection.close()

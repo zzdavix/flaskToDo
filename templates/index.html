@@ -7,11 +7,48 @@
   rel="icon"
   href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✅</text></svg>"
 />
+{% macro meta(todo) %}
+<div class="meta" data-id="{{todo[0]}}">
+  <span class="badge badge-{{todo[7]}}">{{todo[7]}}</span>
+  <select class="metaPriority" onchange="updateMeta(this)" title="priority">
+    {% for p in ["alta", "media", "baixa"] %}
+    <option value="{{p}}" {% if p == todo[7] %}selected{% endif %}>{{p}}</option>
+    {% endfor %}
+  </select>
+  <input
+    type="date"
+    class="metaDue"
+    value="{{todo[8] or ''}}"
+    onchange="updateMeta(this)"
+    title="due date"
+  />
+  {% if todo[10] %}<span class="overdueTag">atrasada</span>{% endif %}
+</div>
+{% endmacro %}
 <body class="container">
   <h1>Todos</h1>
+  <form method="get" action="/" class="controls">
+    <label>
+      ordenar:
+      <select name="sort" onchange="this.form.submit()">
+        <option value="created" {% if sortBy == "created" %}selected{% endif %}>criação</option>
+        <option value="priority" {% if sortBy == "priority" %}selected{% endif %}>prioridade</option>
+        <option value="due" {% if sortBy == "due" %}selected{% endif %}>vencimento</option>
+      </select>
+    </label>
+    <label>
+      prioridade:
+      <select name="priority" onchange="this.form.submit()">
+        <option value="all" {% if priorityFilter == "all" %}selected{% endif %}>todas</option>
+        <option value="alta" {% if priorityFilter == "alta" %}selected{% endif %}>alta</option>
+        <option value="media" {% if priorityFilter == "media" %}selected{% endif %}>média</option>
+        <option value="baixa" {% if priorityFilter == "baixa" %}selected{% endif %}>baixa</option>
+      </select>
+    </label>
+  </form>
   {% for todo in todos %}{% if todo[4] == "False" %}
   <p class="todoID">{{todo[0]}}</p>
-  <div class="notCompletedToDos">
+  <div class="notCompletedToDos{% if todo[10] %} overdue{% endif %}">
     <div>
       <a href="/check/{{todo[0]}}" class="todoStatus">🔲</a>
     </div>
@@ -19,6 +56,7 @@
     <button class="btnSave" type="submit" onclick="editToDo()" title="save">
       💾
     </button>
+    {{ meta(todo) }}
     <p class="date">
       {{todo[3]}} <br />
       {{todo[2]}}
@@ -36,6 +74,7 @@
     <button class="btnSave" type="submit" onclick="editToDo()" title="save">
       💾
     </button>
+    {{ meta(todo) }}
     <p class="date">
       {{todo[6]}} <br />
       {{todo[5]}}
@@ -47,6 +86,12 @@
   {% endif %} {% endfor %}
   <div class="add">
     <input type="text" name="toodo" class="inputToDo" />
+    <select class="addPriority" title="priority">
+      <option value="alta">alta</option>
+      <option value="media" selected>media</option>
+      <option value="baixa">baixa</option>
+    </select>
+    <input type="date" class="addDue" title="due date" />
     <button type="submit" class="btnAdd" onclick="todo()">add todo</button>
   </div>
 </body>

@@ -1,12 +1,27 @@
+import os
 import socket
 import sqlite3
 import secrets
 import dbChecker
+from contextlib import contextmanager
 from datetime import datetime
 from flask import Flask, render_template, redirect, request
 
 app = Flask(__name__)
 app.secret_key = secrets.token_urlsafe(32)
+app.config["DATABASE"] = os.environ.get("FLASKTODO_DB", "todos.db")
+dbChecker.initDb(app.config["DATABASE"])
+
+
+@contextmanager
+def getDb():
+    """Abre uma conexão, faz commit ao sair sem erro e SEMPRE fecha."""
+    connection = sqlite3.connect(app.config["DATABASE"])
+    try:
+        yield connection
+        connection.commit()
+    finally:
+        connection.close()
 
 
 def currentDate():
@@ -45,13 +60,13 @@ def safeNext(target):
     return target
 
 
-def validCategory(cursor, value):
+def validCategory(connection, value):
     """Devolve o id se a categoria existir; senão None (sem categoria)."""
     try:
         categoryId = int(value)
     except (TypeError, ValueError):
         return None
-    found = cursor.execute(
+    found = connection.execute(
         "select id from categories where id = ?", (categoryId,)
     ).fetchone()
     return found[0] if found else None
@@ -64,14 +79,13 @@ def index():
     categoryFilter = request.args.get("category", "all")  # all | none | <id>
     query = request.args.get("q", "").strip()
 
-    connection = sqlite3.connect("todos.db")
-    cursor = connection.cursor()
-    cursor.execute(
-        "select id,todo,date,time,status,editDate,editTime,priority,dueDate,categoryId from todos"
-    )
-    rows = cursor.fetchall()
-    categories = cursor.execute("select id,name from categories order by name").fetchall()
-    connection.close()
+    with getDb() as connection:
+        rows = connection.execute(
+            "select id,todo,date,time,status,editDate,editTime,priority,dueDate,categoryId from todos"
+        ).fetchall()
+        categories = connection.execute(
+            "select id,name from categories order by name"
+        ).fetchall()
     categoryNames = dict(categories)
 
     today = datetime.now().strftime("%Y-%m-%d")
@@ -116,97 +130,87 @@ def index():
     )
 
 
-@app.route("/add/<todo>")
-def add(todo):
-    priority = validPriority(request.args.get("priority"))
-    dueDate = validDueDate(request.args.get("due"))
-    connection = sqlite3.connect("todos.db")
-    cursor = connection.cursor()
-    categoryId = validCategory(cursor, request.args.get("category"))
-    cursor.execute(
-        "insert into todos(todo,date,time,priority,dueDate,categoryId) values(?,?,?,?,?,?)",
-        (todo, currentDate(), currentTime(), priority, dueDate, categoryId),
-    )
-    connection.commit()
-    connection.close()
-    return redirect("/")
+def cleanText(value):
+    return (value or "").strip()
 
 
-@app.route("/meta/<int:id>")
+@app.route("/add", methods=["POST"])
+def add():
+    todo = cleanText(request.form.get("todo"))
+    if todo:
+        priority = validPriority(request.form.get("priority"))
+        dueDate = validDueDate(request.form.get("due"))
+        with getDb() as connection:
+            categoryId = validCategory(connection, request.form.get("category"))
+            connection.execute(
+                "insert into todos(todo,date,time,priority,dueDate,categoryId) values(?,?,?,?,?,?)",
+                (todo, currentDate(), currentTime(), priority, dueDate, categoryId),
+            )
+    return redirect(safeNext(request.form.get("next")))
+
+
+@app.route("/meta/<int:id>", methods=["POST"])
 def meta(id):
-    priority = validPriority(request.args.get("priority"))
-    dueDate = validDueDate(request.args.get("due"))
-    connection = sqlite3.connect("todos.db")
-    cursor = connection.cursor()
-    categoryId = validCategory(cursor, request.args.get("category"))
-    cursor.execute(
-        "update todos set priority = ?, dueDate = ?, categoryId = ? where id = ?",
-        (priority, dueDate, categoryId, id),
-    )
-    connection.commit()
-    connection.close()
-    return redirect(safeNext(request.args.get("next")))
+    priority = validPriority(request.form.get("priority"))
+    dueDate = validDueDate(request.form.get("due"))
+    with getDb() as connection:
+        categoryId = validCategory(connection, request.form.get("category"))
+        connection.execute(
+            "update todos set priority = ?, dueDate = ?, categoryId = ? where id = ?",
+            (priority, dueDate, categoryId, id),
+        )
+    return redirect(safeNext(request.form.get("next")))
 
 
-@app.route("/category/add/<name>")
-def categoryAdd(name):
-    name = name.strip()[:30]
+@app.route("/category/add", methods=["POST"])
+def categoryAdd():
+    name = cleanText(request.form.get("name"))[:30]
     if name:
-        connection = sqlite3.connect("todos.db")
-        # nome único sem diferenciar maiúsculas (COLLATE NOCASE na tabela)
-        connection.execute("insert or ignore into categories(name) values(?)", (name,))
-        connection.commit()
-        connection.close()
-    return redirect(safeNext(request.args.get("next")))
+        with getDb() as connection:
+            # nome único sem diferenciar maiúsculas (COLLATE NOCASE na tabela)
+            connection.execute("insert or ignore into categories(name) values(?)", (name,))
+    return redirect(safeNext(request.form.get("next")))
 
 
-@app.route("/category/delete/<int:id>")
+@app.route("/category/delete/<int:id>", methods=["POST"])
 def categoryDelete(id):
-    connection = sqlite3.connect("todos.db")
-    connection.execute("update todos set categoryId = NULL where categoryId = ?", (id,))
-    connection.execute("delete from categories where id = ?", (id,))
-    connection.commit()
-    connection.close()
-    return redirect("/")
+    with getDb() as connection:
+        connection.execute("update todos set categoryId = NULL where categoryId = ?", (id,))
+        connection.execute("delete from categories where id = ?", (id,))
+    return redirect(safeNext(request.form.get("next")))
 
 
-@app.route("/check/<int:id>")
+@app.route("/check/<int:id>", methods=["POST"])
 def check(id):
-    connection = sqlite3.connect("todos.db")
-    cursor = connection.cursor()
-    cursor.execute(f'update todos set status = "True" where id = {id}')
-    cursor.execute(f'update todos set editDate = "{currentDate()}" where id = {id}')
-    cursor.execute(f'update todos set editTime = "{currentTime()}" where id = {id}')
-    connection.commit()
-    return redirect("/")
+    with getDb() as connection:
+        connection.execute(
+            "update todos set status = 'True', editDate = ?, editTime = ? where id = ?",
+            (currentDate(), currentTime(), id),
+        )
+    return redirect(safeNext(request.form.get("next")))
 
 
-@app.route("/uncheck/<int:id>")
+@app.route("/uncheck/<int:id>", methods=["POST"])
 def uncheck(id):
-    connection = sqlite3.connect("todos.db")
-    cursor = connection.cursor()
-    cursor.execute(f'update todos set status = "False" where id = {id}')
-    connection.commit()
-    return redirect("/")
+    with getDb() as connection:
+        connection.execute("update todos set status = 'False' where id = ?", (id,))
+    return redirect(safeNext(request.form.get("next")))
 
 
-@app.route("/edit/<int:id>/<todo>")
-def edit(id, todo):
-    connection = sqlite3.connect("todos.db")
-    cursor = connection.cursor()
-    cursor.execute(f'update todos set todo = "{todo}" where id = {id}')
-    connection.commit()
-    return redirect("/")
+@app.route("/edit/<int:id>", methods=["POST"])
+def edit(id):
+    todo = cleanText(request.form.get("todo"))
+    if todo:
+        with getDb() as connection:
+            connection.execute("update todos set todo = ? where id = ?", (todo, id))
+    return redirect(safeNext(request.form.get("next")))
 
 
-@app.route("/delete/<int:id>")
+@app.route("/delete/<int:id>", methods=["POST"])
 def delete(id):
-    connection = sqlite3.connect("todos.db")
-    cursor = connection.cursor()
-    cursor.execute(f"delete from todos where id = {id}")
-    cursor.execute(f"update sqlite_sequence set seq = seq-1")
-    connection.commit()
-    return redirect("/")
+    with getDb() as connection:
+        connection.execute("delete from todos where id = ?", (id,))
+    return redirect(safeNext(request.form.get("next")))
 
 
 @app.errorhandler(404)

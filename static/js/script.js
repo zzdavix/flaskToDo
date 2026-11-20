@@ -1,35 +1,50 @@
+// Todas as alterações no servidor são feitas via POST (formulário oculto).
+function postTo(url, data) {
+    var form = document.createElement("form");
+    form.method = "post";
+    form.action = url;
+    data.next = window.location.pathname + window.location.search;
+    Object.keys(data).forEach(function (key) {
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = data[key];
+        form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+}
 function todo() {
     var input = document.querySelector(".inputToDo").value;
-    if (input === "" || input.replace(/\s/g, "") === "") {
-    } else {
-        var priority = document.querySelector(".addPriority").value;
-        var due = document.querySelector(".addDue").value;
-        var category = document.querySelector(".addCategory").value;
-        window.location.href =
-            `/add/${encodeURIComponent(input)}?priority=${priority}&due=${due}&category=${category}`;
+    if (input.replace(/\s/g, "") !== "") {
+        postTo("/add", {
+            todo: input,
+            priority: document.querySelector(".addPriority").value,
+            due: document.querySelector(".addDue").value,
+            category: document.querySelector(".addCategory").value,
+        });
     }
 }
-function editToDo() {
-    var todo = document.querySelector(".todoContent").value;
-    var todoID = document.querySelector(".todoID").innerHTML;
-    if (todo === "" || todo.replace(/\s/g, "") === "") {
-    } else {
-        window.location.href = `/edit/${todoID}/${todo}`;
+function editToDo(button) {
+    // Usa a linha do botão clicado (antes sempre editava a primeira tarefa).
+    var row = button.closest(".notCompletedToDos, .completedToDos");
+    var todo = row.querySelector(".todoContent").value;
+    var todoID = row.querySelector(".meta").dataset.id;
+    if (todo.replace(/\s/g, "") !== "") {
+        postTo(`/edit/${todoID}`, { todo: todo });
     }
 }
 function updateMeta(el) {
     var meta = el.closest(".meta");
-    var priority = meta.querySelector(".metaPriority").value;
-    var due = meta.querySelector(".metaDue").value;
-    var category = meta.querySelector(".metaCategory").value;
-    var next = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href =
-        `/meta/${meta.dataset.id}?priority=${priority}&due=${due}&category=${category}&next=${next}`;
+    postTo(`/meta/${meta.dataset.id}`, {
+        priority: meta.querySelector(".metaPriority").value,
+        due: meta.querySelector(".metaDue").value,
+        category: meta.querySelector(".metaCategory").value,
+    });
 }
 function addCategory() {
     var name = document.querySelector(".inputCategory").value.trim();
     if (name !== "") {
-        var next = encodeURIComponent(window.location.pathname + window.location.search);
-        window.location.href = `/category/add/${encodeURIComponent(name)}?next=${next}`;
+        postTo("/category/add", { name: name });
     }
 }

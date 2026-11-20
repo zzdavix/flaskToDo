@@ -246,6 +246,28 @@ h6 {
     font-size: 0.75rem;
 }
 
+.inlineForm {
+    display: inline;
+    margin: 0;
+}
+
+button.todoStatus, button.chipRemove {
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+button.chipRemove {
+    margin-left: 0.4rem;
+    font-size: 0.6rem;
+}
+
+.categoryChip form {
+    display: inline;
+}
+
 .notFoundContainer {
     position: absolute;
     top: 50%;

@@ -15,7 +15,7 @@ def add(client, todo="tarefa", **extra):
 
 def titles(client, url="/"):
     html = client.get(url).get_data(as_text=True)
-    return re.findall(r'value="([^"]*)" class="todoContent"', html)
+    return re.findall(r'value="([^"]*)"\s+class="todoContent"', html)
 
 
 # ---------- POST em vez de GET ----------
@@ -255,3 +255,40 @@ def test_migration_from_original_schema(tmp_path):
         assert {"priority", "dueDate", "categoryId"} <= set(cols)
         assert conn.execute("select todo,priority from todos").fetchall() == [("antiga", "media")]
         assert conn.execute("select count(*) from categories").fetchall() == [(0,)]
+
+
+# ---------- Interface (Atividade D) ----------
+def test_empty_state_and_summary(client):
+    html = client.get("/").get_data(as_text=True)
+    assert "Nenhuma tarefa ainda" in html
+    assert "0 pendentes · 0 concluídas" in html
+
+
+def test_summary_counts(client):
+    add(client, "a")
+    add(client, "b")
+    client.post("/check/1")
+    html = client.get("/").get_data(as_text=True)
+    assert "1 pendente · 1 concluída" in html
+    assert "Nenhuma tarefa" not in html
+
+
+def test_no_results_offers_clear_filters(client):
+    add(client, "a")
+    html = client.get("/?q=zzz").get_data(as_text=True)
+    assert "Nenhuma tarefa encontrada" in html
+    assert "limpar filtros" in html
+    assert "limpar filtros" not in client.get("/").get_data(as_text=True)
+
+
+def test_add_form_is_native_post_form(client):
+    html = client.get("/").get_data(as_text=True)
+    assert 'method="post" action="/add"' in html
+    assert "autofocus" in html
+
+
+def test_destructive_actions_ask_for_confirmation(client):
+    add(client, "a")
+    client.post("/category/add", data={"name": "Casa"})
+    html = client.get("/").get_data(as_text=True)
+    assert html.count("return confirm(") == 2  # excluir tarefa + remover categoria

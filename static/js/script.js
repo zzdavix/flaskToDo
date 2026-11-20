@@ -1,4 +1,4 @@
-// Todas as alterações no servidor são feitas via POST (formulário oculto).
+// Alterações no servidor são feitas via POST (formulário oculto).
 function postTo(url, data) {
     var form = document.createElement("form");
     form.method = "post";
@@ -14,26 +14,25 @@ function postTo(url, data) {
     document.body.appendChild(form);
     form.submit();
 }
-function todo() {
-    var input = document.querySelector(".inputToDo").value;
-    if (input.replace(/\s/g, "") !== "") {
-        postTo("/add", {
-            todo: input,
-            priority: document.querySelector(".addPriority").value,
-            due: document.querySelector(".addDue").value,
-            category: document.querySelector(".addCategory").value,
-        });
-    }
+
+function rowOf(element) {
+    return element.closest(".notCompletedToDos, .completedToDos");
 }
-function editToDo(button) {
-    // Usa a linha do botão clicado (antes sempre editava a primeira tarefa).
-    var row = button.closest(".notCompletedToDos, .completedToDos");
+
+// Mostra o botão "salvar" assim que o texto da tarefa é alterado.
+function markDirty(input) {
+    rowOf(input).classList.add("dirty");
+}
+
+function editToDo(element) {
+    var row = rowOf(element);
     var todo = row.querySelector(".todoContent").value;
     var todoID = row.querySelector(".meta").dataset.id;
     if (todo.replace(/\s/g, "") !== "") {
         postTo(`/edit/${todoID}`, { todo: todo });
     }
 }
+
 function updateMeta(el) {
     var meta = el.closest(".meta");
     postTo(`/meta/${meta.dataset.id}`, {
@@ -42,9 +41,12 @@ function updateMeta(el) {
         category: meta.querySelector(".metaCategory").value,
     });
 }
-function addCategory() {
-    var name = document.querySelector(".inputCategory").value.trim();
-    if (name !== "") {
-        postTo("/category/add", { name: name });
+
+// Atalho: "/" foca o campo de busca (fora de campos de formulário).
+document.addEventListener("keydown", function (event) {
+    var tag = (event.target.tagName || "").toLowerCase();
+    if (event.key === "/" && tag !== "input" && tag !== "select" && tag !== "textarea") {
+        event.preventDefault();
+        document.querySelector(".searchBox").focus();
     }
-}
+});

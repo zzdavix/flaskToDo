@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>flaskToDo</title>
 <link
   rel="stylesheet"
@@ -7,48 +12,110 @@
   rel="icon"
   href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✅</text></svg>"
 />
-{% macro postBtn(action, label, cls="todoStatus", title="") %}
-<form method="post" action="{{action}}" class="inlineForm">
+</head>
+{% macro postBtn(action, label, cls="todoStatus", title="", confirmMsg="") %}
+<form
+  method="post"
+  action="{{action}}"
+  class="inlineForm"
+  {% if confirmMsg %}onsubmit="return confirm('{{confirmMsg}}')"{% endif %}
+>
   <input type="hidden" name="next" value="{{ request.full_path }}" />
-  <button type="submit" class="{{cls}}" title="{{title}}">{{label}}</button>
+  <button type="submit" class="{{cls}}" title="{{title}}" aria-label="{{title}}">{{label}}</button>
 </form>
 {% endmacro %}
 {% macro meta(todo) %}
 <div class="meta" data-id="{{todo[0]}}">
-  <span class="badge badge-{{todo[7]}}">{{todo[7]}}</span>
-  <select class="metaPriority" onchange="updateMeta(this)" title="priority">
-    {% for p in ["alta", "media", "baixa"] %}
-    <option value="{{p}}" {% if p == todo[7] %}selected{% endif %}>{{p}}</option>
+  <select
+    class="metaPriority badge badge-{{todo[7]}}"
+    onchange="updateMeta(this)"
+    title="prioridade"
+    aria-label="prioridade"
+  >
+    {% for p, label in [("alta", "alta"), ("media", "média"), ("baixa", "baixa")] %}
+    <option value="{{p}}" {% if p == todo[7] %}selected{% endif %}>{{label}}</option>
     {% endfor %}
   </select>
-  <select class="metaCategory" onchange="updateMeta(this)" title="category">
+  <select
+    class="metaCategory"
+    onchange="updateMeta(this)"
+    title="categoria"
+    aria-label="categoria"
+  >
     <option value="">sem categoria</option>
     {% for c in categories %}
     <option value="{{c[0]}}" {% if c[0] == todo[11] %}selected{% endif %}>{{c[1]}}</option>
     {% endfor %}
   </select>
-  <input
-    type="date"
-    class="metaDue"
-    value="{{todo[8] or ''}}"
-    onchange="updateMeta(this)"
-    title="due date"
-  />
+  <label class="dueLabel">
+    vence
+    <input
+      type="date"
+      class="metaDue"
+      value="{{todo[8] or ''}}"
+      onchange="updateMeta(this)"
+      aria-label="data de vencimento"
+    />
+  </label>
   {% if todo[10] %}<span class="overdueTag">atrasada</span>{% endif %}
 </div>
 {% endmacro %}
+{% set pending = todos | selectattr(4, "equalto", "False") | list %}
+{% set done = todos | selectattr(4, "equalto", "True") | list %}
+{% set filtered = query or categoryFilter != "all" or priorityFilter != "all" %}
 <body class="container">
-  <h1>Todos</h1>
+  <header class="pageHeader">
+    <h1>Todos</h1>
+    <p class="summary">{{ pending|length }} pendente{{ "s" if pending|length != 1 }} · {{ done|length }} concluída{{ "s" if done|length != 1 }}</p>
+  </header>
+
+  <form method="post" action="/add" class="add">
+    <input type="hidden" name="next" value="{{ request.full_path }}" />
+    <div class="addMain">
+      <input
+        type="text"
+        name="todo"
+        class="inputToDo"
+        placeholder="O que precisa ser feito?"
+        autocomplete="off"
+        autofocus
+        required
+      />
+      <button type="submit" class="btnAdd">Adicionar</button>
+    </div>
+    <div class="addOptions">
+      <label>prioridade
+        <select name="priority" class="addPriority">
+          <option value="alta">alta</option>
+          <option value="media" selected>média</option>
+          <option value="baixa">baixa</option>
+        </select>
+      </label>
+      <label>categoria
+        <select name="category" class="addCategory">
+          <option value="">sem categoria</option>
+          {% for c in categories %}
+          <option value="{{c[0]}}">{{c[1]}}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>vencimento
+        <input type="date" name="due" class="addDue" />
+      </label>
+    </div>
+  </form>
+
   <form method="get" action="/" class="controls">
     <input
       type="search"
       name="q"
       value="{{query}}"
       class="searchBox"
-      placeholder="buscar tarefas..."
+      placeholder="🔍 buscar tarefas..."
+      aria-label="buscar tarefas"
     />
     <label>
-      categoria:
+      categoria
       <select name="category" onchange="this.form.submit()">
         <option value="all" {% if categoryFilter == "all" %}selected{% endif %}>todas</option>
         <option value="none" {% if categoryFilter == "none" %}selected{% endif %}>sem categoria</option>
@@ -58,15 +125,7 @@
       </select>
     </label>
     <label>
-      ordenar:
-      <select name="sort" onchange="this.form.submit()">
-        <option value="created" {% if sortBy == "created" %}selected{% endif %}>criação</option>
-        <option value="priority" {% if sortBy == "priority" %}selected{% endif %}>prioridade</option>
-        <option value="due" {% if sortBy == "due" %}selected{% endif %}>vencimento</option>
-      </select>
-    </label>
-    <label>
-      prioridade:
+      prioridade
       <select name="priority" onchange="this.form.submit()">
         <option value="all" {% if priorityFilter == "all" %}selected{% endif %}>todas</option>
         <option value="alta" {% if priorityFilter == "alta" %}selected{% endif %}>alta</option>
@@ -74,73 +133,96 @@
         <option value="baixa" {% if priorityFilter == "baixa" %}selected{% endif %}>baixa</option>
       </select>
     </label>
+    <label>
+      ordenar
+      <select name="sort" onchange="this.form.submit()">
+        <option value="created" {% if sortBy == "created" %}selected{% endif %}>criação</option>
+        <option value="priority" {% if sortBy == "priority" %}selected{% endif %}>prioridade</option>
+        <option value="due" {% if sortBy == "due" %}selected{% endif %}>vencimento</option>
+      </select>
+    </label>
+    {% if filtered %}<a href="/" class="clearFilters">limpar filtros</a>{% endif %}
   </form>
-  {% for todo in todos %}{% if todo[4] == "False" %}
-  <p class="todoID">{{todo[0]}}</p>
-  <div class="notCompletedToDos{% if todo[10] %} overdue{% endif %}">
-    <div>
+
+  {% if not todos %}
+  <div class="emptyState">
+    {% if filtered %}
+    <p>Nenhuma tarefa encontrada com esses filtros.</p>
+    <a href="/" class="clearFilters">limpar filtros</a>
+    {% else %}
+    <p>Nenhuma tarefa ainda 🎉</p>
+    <p class="hint">Digite acima o que precisa ser feito e pressione Enter.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% for todo in pending %}
+  <div class="todoRow notCompletedToDos{% if todo[10] %} overdue{% endif %}">
+    <div class="rowMain">
       {{ postBtn("/check/" ~ todo[0], "🔲", "todoStatus", "concluir") }}
+      <input
+        type="text"
+        value="{{todo[1]}}"
+        class="todoContent"
+        oninput="markDirty(this)"
+        onkeydown="if (event.key === 'Enter') editToDo(this)"
+        aria-label="texto da tarefa"
+      />
+      <button class="btnSave" type="button" onclick="editToDo(this)" title="salvar">💾 salvar</button>
+      <p class="date">{{todo[3]}} {{todo[2]}}</p>
+      {{ postBtn("/delete/" ~ todo[0], "🗑️", "todoStatus", "excluir", "Excluir esta tarefa?") }}
     </div>
-    <input type="text" value="{{todo[1]}}" class="todoContent" />
-    <button class="btnSave" type="submit" onclick="editToDo(this)" title="save">
-      💾
-    </button>
     {{ meta(todo) }}
-    <p class="date">
-      {{todo[3]}} <br />
-      {{todo[2]}}
-    </p>
-    <div class="delete">
-      {{ postBtn("/delete/" ~ todo[0], "🗑️", "todoStatus", "excluir") }}
-    </div>
   </div>
-  {% endif %}{% endfor %} {% for todo in todos %} {% if todo[4] == "True" %}
-  <div class="completedToDos">
-    <div>
+  {% endfor %}
+
+  {% if done %}
+  <h2 class="sectionTitle">Concluídas</h2>
+  {% for todo in done %}
+  <div class="todoRow completedToDos">
+    <div class="rowMain">
       {{ postBtn("/uncheck/" ~ todo[0], "✅", "todoStatus", "reabrir") }}
+      <input
+        type="text"
+        value="{{todo[1]}}"
+        class="todoContent"
+        oninput="markDirty(this)"
+        onkeydown="if (event.key === 'Enter') editToDo(this)"
+        aria-label="texto da tarefa"
+      />
+      <button class="btnSave" type="button" onclick="editToDo(this)" title="salvar">💾 salvar</button>
+      <p class="date">{{todo[6]}} {{todo[5]}}</p>
+      {{ postBtn("/delete/" ~ todo[0], "🗑️", "todoStatus", "excluir", "Excluir esta tarefa?") }}
     </div>
-    <input type="text" value="{{todo[1]}}" class="todoContent" />
-    <button class="btnSave" type="submit" onclick="editToDo(this)" title="save">
-      💾
-    </button>
     {{ meta(todo) }}
-    <p class="date">
-      {{todo[6]}} <br />
-      {{todo[5]}}
-    </p>
-    <div class="delete">
-      {{ postBtn("/delete/" ~ todo[0], "🗑️", "todoStatus", "excluir") }}
-    </div>
   </div>
-  {% endif %} {% endfor %}
-  <div class="add">
-    <input type="text" name="toodo" class="inputToDo" />
-    <select class="addPriority" title="priority">
-      <option value="alta">alta</option>
-      <option value="media" selected>media</option>
-      <option value="baixa">baixa</option>
-    </select>
-    <select class="addCategory" title="category">
-      <option value="">sem categoria</option>
-      {% for c in categories %}
-      <option value="{{c[0]}}">{{c[1]}}</option>
-      {% endfor %}
-    </select>
-    <input type="date" class="addDue" title="due date" />
-    <button type="submit" class="btnAdd" onclick="todo()">add todo</button>
-  </div>
-  <div class="categoriesBox">
-    <h3>Categorias</h3>
+  {% endfor %}
+  {% endif %}
+
+  <section class="categoriesBox">
+    <h2 class="sectionTitle">Categorias</h2>
     {% for c in categories %}
-    <span class="categoryChip">
+    <span class="categoryChip{% if categoryFilter == c[0]|string %} active{% endif %}">
       <a href="/?category={{c[0]}}">{{c[1]}}</a>
-      {{ postBtn("/category/delete/" ~ c[0], "✖", "chipRemove", "remover categoria") }}
+      {{ postBtn("/category/delete/" ~ c[0], "✖", "chipRemove", "remover categoria", "Remover a categoria? As tarefas serão mantidas.") }}
     </span>
+    {% else %}
+    <p class="hint">Nenhuma categoria. Crie a primeira abaixo.</p>
     {% endfor %}
-    <div class="addCategoryBox">
-      <input type="text" class="inputCategory" placeholder="nova categoria" maxlength="30" />
-      <button type="button" class="btnAdd" onclick="addCategory()">add categoria</button>
-    </div>
-  </div>
-</body>
+    <form method="post" action="/category/add" class="addCategoryBox">
+      <input type="hidden" name="next" value="{{ request.full_path }}" />
+      <input
+        type="text"
+        name="name"
+        class="inputCategory"
+        placeholder="nova categoria"
+        maxlength="30"
+        autocomplete="off"
+        required
+      />
+      <button type="submit" class="btnAdd">Criar</button>
+    </form>
+  </section>
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

@@ -1,13 +1,28 @@
+:root {
+    --ink: #333745;
+    --accent: #C8F6EA;
+    --accent-strong: #B9F3E4;
+    --accent-soft: #F3FDFA;
+    --danger: #D64545;
+    --danger-soft: #FDF0F0;
+    --muted: #7a8090;
+}
+
 html {
     font-size: 175%;
 }
 
 * {
     font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-    color: #333745;
+    color: var(--ink);
     user-select: none;
     text-align: center;
     transition: 0.2s;
+    box-sizing: border-box;
+}
+
+input, select {
+    user-select: text;
 }
 
 body::-webkit-scrollbar {
@@ -16,7 +31,7 @@ body::-webkit-scrollbar {
 
 body::-webkit-scrollbar-thumb {
     border-radius: 1rem;
-    background: #333745;
+    background: var(--ink);
 }
 
 body::-webkit-scrollbar-track,
@@ -30,169 +45,116 @@ a {
 
 h1 {
     text-align: left;
-}
-
-h6 {
-    font-size: 1.25rem;
     margin: 0;
 }
 
 .container {
     display: block;
-    margin: 2rem auto 0 auto;
+    margin: 2rem auto 3rem auto;
     width: 80%;
+    max-width: 52rem;
 }
 
-.btnAdd {
-    padding: 0.3rem;
-    font-size: 1rem;
-    background-color: #C8F6EA;
-    border-radius: 0.25rem;
-    border: 0;
-    cursor: pointer;
-    margin: 1rem 0 0 1.5rem;
+/* ---------- cabeçalho ---------- */
+.pageHeader {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1rem;
 }
 
-.btnAdd:hover {
-    background-color: #B9F3E4;
+.summary, .hint {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin: 0;
 }
 
-.btnAdd:focus {
-    box-shadow: #C8F6EA;
+.sectionTitle {
+    font-size: 0.8rem;
+    text-align: left;
+    margin: 1.5rem 0 0.4rem 0;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ---------- formulário de adicionar ---------- */
+.add {
+    background-color: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 0.5rem;
+    padding: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.addMain {
+    display: flex;
+    gap: 0.5rem;
 }
 
 .inputToDo {
-    border: 1px solid #C8F6EA;
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--accent);
     border-radius: 0.25rem;
     height: 2rem;
-    width: 80%;
-    padding: 0.25rem;
+    padding: 0.25rem 0.5rem;
     font-size: 1rem;
+    text-align: left;
+    background: #fff;
     transition: 0s;
 }
 
-.inputToDo:focus {
-    outline: 2px solid #C8F6EA;
+.inputToDo:focus, .searchBox:focus, .inputCategory:focus {
+    outline: 2px solid var(--accent-strong);
 }
 
-.notCompletedToDos, .completedToDos {
-    display: flex;
-    justify-content: space-between;
-}
-
-.todoContent {
-    width: 60%;
-    user-select: text;
-    border: 0;
-    cursor: default;
-    background-color: transparent;
-}
-
-.todoContent:focus {
-    outline: none;
-}
-
-.todoID {
-    display: none;
-}
-
-.notCompletedToDos *, .completedToDos * {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.notCompletedToDos, .completedToDos {
-    padding: 0.5rem;
-}
-
-.completedToDos .todoContent {
-    text-decoration: line-through;
-    text-decoration-color: #333745;
-    text-decoration-thickness: 0.15rem;
-}
-
-.completedToDos:hover, .notCompletedToDos:hover {
-    background-color: #F3FDFA;
-    border-radius: 0.5rem;
-}
-
-.todoContent {
-    font-size: 1.25rem;
-}
-
-.delete, .todoStatus {
-    width: 1rem;
-}
-
-.delete a:hover, .todoStatus:hover {
-    font-size: 1.2rem;
-}
-
-.btnSave {
-    color: #000;
+.btnAdd {
+    padding: 0 0.8rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    background-color: var(--accent);
+    border-radius: 0.25rem;
     border: 0;
     cursor: pointer;
-    background-color: transparent;
-    transition: 0.2s;
-    font-size: 0;
-    height: fit-content;
-    margin: auto 0 auto 0;
 }
 
-.todoContent:focus+.btnSave {
-    font-size: 0.75rem;
+.btnAdd:hover {
+    background-color: var(--accent-strong);
 }
 
+.addOptions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.65rem;
+    text-align: left;
+}
+
+.addOptions label, .controls label, .dueLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.65rem;
+    color: var(--muted);
+}
+
+select, input[type="date"] {
+    font-size: 0.7rem;
+    border: 1px solid var(--accent);
+    border-radius: 0.25rem;
+    background: #fff;
+    padding: 0.1rem 0.25rem;
+}
+
+/* ---------- filtros ---------- */
 .controls {
     display: flex;
-    gap: 1.5rem;
-    font-size: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
     margin-bottom: 0.5rem;
-}
-
-.controls label, .controls select, .meta select, .meta input, .add select, .add input[type="date"] {
-    font-size: 0.7rem;
-}
-
-.add select, .add input[type="date"] {
-    margin-left: 0.5rem;
-    height: 2rem;
-}
-
-.meta {
-    gap: 0.4rem;
-    width: 22%;
-}
-
-.badge {
-    padding: 0.05rem 0.5rem;
-    border-radius: 1rem;
-    font-size: 0.65rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    color: #fff;
-}
-
-.badge-alta { background-color: #D64545; }
-.badge-media { background-color: #E0A526; }
-.badge-baixa { background-color: #3FA672; }
-
-.notCompletedToDos.overdue,
-.notCompletedToDos.overdue .todoContent,
-.notCompletedToDos.overdue .metaDue {
-    color: #D64545;
-}
-
-.notCompletedToDos.overdue {
-    background-color: #FDF0F0;
-    border-radius: 0.5rem;
-}
-
-.overdueTag {
-    color: #D64545;
-    font-size: 0.6rem;
-    font-weight: bold;
 }
 
 .searchBox {
@@ -200,50 +162,72 @@ h6 {
     min-width: 8rem;
     font-size: 0.8rem;
     padding: 0.25rem 0.5rem;
-    border: 1px solid #C8F6EA;
+    border: 1px solid var(--accent);
     border-radius: 0.25rem;
-    user-select: text;
+    text-align: left;
 }
 
-.searchBox:focus {
-    outline: 2px solid #C8F6EA;
+.clearFilters {
+    font-size: 0.65rem;
+    color: var(--danger);
+    text-decoration: underline;
 }
 
-.controls {
-    flex-wrap: wrap;
+.emptyState {
+    padding: 1.5rem 0;
+}
+
+/* ---------- linhas de tarefa ---------- */
+.todoRow {
+    padding: 0.4rem 0.5rem;
+    border-radius: 0.5rem;
+    border-bottom: 1px solid var(--accent-soft);
+}
+
+.todoRow:hover, .todoRow:focus-within {
+    background-color: var(--accent-soft);
+}
+
+.rowMain {
+    display: flex;
     align-items: center;
+    gap: 0.5rem;
 }
 
-.meta {
-    flex-wrap: wrap;
-}
-
-.categoriesBox {
-    margin-top: 2rem;
-    font-size: 0.75rem;
-}
-
-.categoriesBox h3 {
+.todoContent {
+    flex: 1;
+    min-width: 0;
+    font-size: 1.1rem;
     text-align: left;
-    margin: 0 0 0.5rem 0;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    background-color: transparent;
+    cursor: text;
 }
 
-.categoryChip {
-    display: inline-block;
-    background-color: #F3FDFA;
-    border: 1px solid #C8F6EA;
-    border-radius: 1rem;
-    padding: 0.1rem 0.6rem;
-    margin: 0 0.4rem 0.4rem 0;
+.todoContent:hover {
+    border-bottom-color: var(--accent);
 }
 
-.addCategoryBox {
-    text-align: left;
+.todoContent:focus {
+    outline: none;
+    border-bottom-color: var(--ink);
 }
 
-.addCategoryBox .btnAdd {
-    margin: 0 0 0 0.5rem;
-    font-size: 0.75rem;
+.completedToDos {
+    opacity: 0.65;
+}
+
+.completedToDos .todoContent {
+    text-decoration: line-through;
+    text-decoration-thickness: 0.1rem;
+}
+
+.date {
+    margin: 0;
+    font-size: 0.55rem;
+    color: var(--muted);
+    white-space: nowrap;
 }
 
 .inlineForm {
@@ -254,20 +238,127 @@ h6 {
 button.todoStatus, button.chipRemove {
     background: none;
     border: 0;
-    padding: 0;
+    padding: 0.15rem;
     cursor: pointer;
     font-size: 1rem;
+    line-height: 1;
+}
+
+button.todoStatus:hover {
+    transform: scale(1.25);
 }
 
 button.chipRemove {
-    margin-left: 0.4rem;
+    margin-left: 0.3rem;
     font-size: 0.6rem;
+}
+
+.btnSave {
+    display: none;
+    border: 0;
+    border-radius: 0.25rem;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.65rem;
+    cursor: pointer;
+    background-color: var(--accent);
+    white-space: nowrap;
+}
+
+.todoRow.dirty .btnSave {
+    display: inline-block;
+}
+
+/* ---------- metadados (prioridade, categoria, vencimento) ---------- */
+.meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.25rem 0 0 1.6rem;
+}
+
+.badge {
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 0.05rem 0.6rem;
+    border: 0;
+    border-radius: 1rem;
+    font-size: 0.6rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: center;
+    color: #fff;
+    cursor: pointer;
+}
+
+.badge option {
+    color: var(--ink);
+    background: #fff;
+    text-transform: none;
+}
+
+.badge-alta { background-color: #D64545; }
+.badge-media { background-color: #C98F10; }
+.badge-baixa { background-color: #2F8F61; }
+
+.notCompletedToDos.overdue {
+    background-color: var(--danger-soft);
+}
+
+.notCompletedToDos.overdue .todoContent,
+.notCompletedToDos.overdue .metaDue,
+.notCompletedToDos.overdue .dueLabel {
+    color: var(--danger);
+}
+
+.overdueTag {
+    color: var(--danger);
+    font-size: 0.6rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+/* ---------- categorias ---------- */
+.categoriesBox {
+    margin-top: 1rem;
+}
+
+.categoryChip {
+    display: inline-block;
+    background-color: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 1rem;
+    padding: 0.1rem 0.6rem;
+    margin: 0 0.4rem 0.4rem 0;
+    font-size: 0.7rem;
+}
+
+.categoryChip.active {
+    background-color: var(--accent);
+    font-weight: 600;
 }
 
 .categoryChip form {
     display: inline;
 }
 
+.addCategoryBox {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+}
+
+.inputCategory {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--accent);
+    border-radius: 0.25rem;
+    text-align: left;
+}
+
+/* ---------- página 404 ---------- */
 .notFoundContainer {
     position: absolute;
     top: 50%;
@@ -287,4 +378,36 @@ button.chipRemove {
 
 .goHome:hover {
     font-size: 6rem;
+}
+
+/* ---------- celular ---------- */
+@media (max-width: 640px) {
+    html {
+        font-size: 125%;
+    }
+
+    .container {
+        width: 94%;
+        margin-top: 1rem;
+    }
+
+    .rowMain {
+        flex-wrap: wrap;
+    }
+
+    .todoContent {
+        flex-basis: 55%;
+    }
+
+    .meta {
+        margin-left: 0;
+    }
+
+    .addMain {
+        flex-direction: column;
+    }
+
+    .btnAdd {
+        height: 2rem;
+    }
 }

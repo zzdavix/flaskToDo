@@ -38,16 +38,41 @@ def formatDue(value):
     return datetime.strptime(value, "%Y-%m-%d").strftime("%d/%m/%Y") if value else ""
 
 
+def safeNext(target):
+    """Só aceita caminhos locais (evita open redirect)."""
+    if not target or not target.startswith("/") or target.startswith("//"):
+        return "/"
+    return target
+
+
+def validCategory(cursor, value):
+    """Devolve o id se a categoria existir; senão None (sem categoria)."""
+    try:
+        categoryId = int(value)
+    except (TypeError, ValueError):
+        return None
+    found = cursor.execute(
+        "select id from categories where id = ?", (categoryId,)
+    ).fetchone()
+    return found[0] if found else None
+
+
 @app.route("/")
 def index():
     sortBy = request.args.get("sort", "created")
     priorityFilter = request.args.get("priority", "all")
+    categoryFilter = request.args.get("category", "all")  # all | none | <id>
+    query = request.args.get("q", "").strip()
 
     connection = sqlite3.connect("todos.db")
     cursor = connection.cursor()
-    cursor.execute("select * from todos")
+    cursor.execute(
+        "select id,todo,date,time,status,editDate,editTime,priority,dueDate,categoryId from todos"
+    )
     rows = cursor.fetchall()
+    categories = cursor.execute("select id,name from categories order by name").fetchall()
     connection.close()
+    categoryNames = dict(categories)
 
     today = datetime.now().strftime("%Y-%m-%d")
     todos = []
@@ -55,12 +80,25 @@ def index():
         priority = validPriority(row[7])
         due = row[8]
         overdue = bool(due) and due < today and row[4] == "False"
+        categoryId = row[9] if row[9] in categoryNames else None
         # índices 0-6: colunas originais; 7 prioridade; 8 vencimento (ISO);
-        # 9 vencimento formatado; 10 atrasada?
-        todos.append(row[:7] + (priority, due, formatDue(due), overdue))
+        # 9 vencimento formatado; 10 atrasada?; 11 id da categoria; 12 nome da categoria
+        todos.append(
+            row[:7]
+            + (priority, due, formatDue(due), overdue, categoryId, categoryNames.get(categoryId))
+        )
 
     if priorityFilter in PRIORITIES:
         todos = [t for t in todos if t[7] == priorityFilter]
+
+    if categoryFilter == "none":
+        todos = [t for t in todos if t[11] is None]
+    elif categoryFilter.isdigit():
+        todos = [t for t in todos if t[11] == int(categoryFilter)]
+
+    if query:
+        needle = query.lower()
+        todos = [t for t in todos if needle in (t[1] or "").lower()]
 
     if sortBy == "priority":
         todos.sort(key=lambda t: (PRIORITY_RANK[t[7]], t[8] is None, t[8] or ""))
@@ -70,8 +108,11 @@ def index():
     return render_template(
         "/index.html",
         todos=todos,
+        categories=categories,
         sortBy=sortBy,
         priorityFilter=priorityFilter,
+        categoryFilter=categoryFilter,
+        query=query,
     )
 
 
@@ -81,9 +122,10 @@ def add(todo):
     dueDate = validDueDate(request.args.get("due"))
     connection = sqlite3.connect("todos.db")
     cursor = connection.cursor()
+    categoryId = validCategory(cursor, request.args.get("category"))
     cursor.execute(
-        "insert into todos(todo,date,time,priority,dueDate) values(?,?,?,?,?)",
-        (todo, currentDate(), currentTime(), priority, dueDate),
+        "insert into todos(todo,date,time,priority,dueDate,categoryId) values(?,?,?,?,?,?)",
+        (todo, currentDate(), currentTime(), priority, dueDate, categoryId),
     )
     connection.commit()
     connection.close()
@@ -96,16 +138,36 @@ def meta(id):
     dueDate = validDueDate(request.args.get("due"))
     connection = sqlite3.connect("todos.db")
     cursor = connection.cursor()
+    categoryId = validCategory(cursor, request.args.get("category"))
     cursor.execute(
-        "update todos set priority = ?, dueDate = ? where id = ?",
-        (priority, dueDate, id),
+        "update todos set priority = ?, dueDate = ?, categoryId = ? where id = ?",
+        (priority, dueDate, categoryId, id),
     )
     connection.commit()
     connection.close()
-    target = request.args.get("next") or "/"
-    if not target.startswith("/") or target.startswith("//"):
-        target = "/"
-    return redirect(target)
+    return redirect(safeNext(request.args.get("next")))
+
+
+@app.route("/category/add/<name>")
+def categoryAdd(name):
+    name = name.strip()[:30]
+    if name:
+        connection = sqlite3.connect("todos.db")
+        # nome único sem diferenciar maiúsculas (COLLATE NOCASE na tabela)
+        connection.execute("insert or ignore into categories(name) values(?)", (name,))
+        connection.commit()
+        connection.close()
+    return redirect(safeNext(request.args.get("next")))
+
+
+@app.route("/category/delete/<int:id>")
+def categoryDelete(id):
+    connection = sqlite3.connect("todos.db")
+    connection.execute("update todos set categoryId = NULL where categoryId = ?", (id,))
+    connection.execute("delete from categories where id = ?", (id,))
+    connection.commit()
+    connection.close()
+    return redirect("/")
 
 
 @app.route("/check/<int:id>")

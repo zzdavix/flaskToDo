@@ -31,5 +31,15 @@ if "priority" not in existingColumns:
     cursor.execute("ALTER TABLE todos ADD COLUMN priority TEXT DEFAULT 'media'")
 if "dueDate" not in existingColumns:
     cursor.execute("ALTER TABLE todos ADD COLUMN dueDate TEXT")
+
+# Migração (Atividade B): tabela de categorias e vínculo opcional na tarefa.
+cursor.execute(
+    """CREATE TABLE IF NOT EXISTS categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE COLLATE NOCASE
+    )"""
+)
+if "categoryId" not in existingColumns:
+    cursor.execute("ALTER TABLE todos ADD COLUMN categoryId INTEGER")
 connection.commit()
 connection.close()

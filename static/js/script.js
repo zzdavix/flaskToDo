@@ -50,3 +50,27 @@ document.addEventListener("keydown", function (event) {
         document.querySelector(".searchBox").focus();
     }
 });
+
+// Tema claro/escuro: sem escolha salva, segue o sistema; o botão alterna e guarda.
+function currentTheme() {
+    return document.documentElement.dataset.theme ||
+        (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+}
+
+function paintThemeButton() {
+    var button = document.querySelector(".themeToggle");
+    if (button) {
+        button.textContent = currentTheme() === "dark" ? "☀️" : "🌙";
+    }
+}
+
+function toggleTheme() {
+    var next = currentTheme() === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try {
+        localStorage.setItem("theme", next);
+    } catch (e) {}
+    paintThemeButton();
+}
+
+paintThemeButton();

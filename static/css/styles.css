@@ -1,4 +1,6 @@
 :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
     --ink: #333745;
     --accent: #C8F6EA;
     --accent-strong: #B9F3E4;
@@ -6,6 +8,37 @@
     --danger: #D64545;
     --danger-soft: #FDF0F0;
     --muted: #7a8090;
+    color-scheme: light;
+}
+
+/* Tema escuro: automático (preferência do sistema) ou escolhido no botão
+   (data-theme em <html>, guardado em localStorage). */
+:root[data-theme="dark"] {
+    --bg: #16181d;
+    --surface: #1f2229;
+    --ink: #e6e8ee;
+    --accent: #24574c;
+    --accent-strong: #2e7062;
+    --accent-soft: #1b2826;
+    --danger: #ff7b7b;
+    --danger-soft: #3a2124;
+    --muted: #9aa1b2;
+    color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #16181d;
+        --surface: #1f2229;
+        --ink: #e6e8ee;
+        --accent: #24574c;
+        --accent-strong: #2e7062;
+        --accent-soft: #1b2826;
+        --danger: #ff7b7b;
+        --danger-soft: #3a2124;
+        --muted: #9aa1b2;
+        color-scheme: dark;
+    }
 }
 
 html {
@@ -23,6 +56,28 @@ html {
 
 input, select {
     user-select: text;
+}
+
+body {
+    background-color: var(--bg);
+}
+
+input::placeholder {
+    color: var(--muted);
+}
+
+.themeToggle {
+    background: none;
+    border: 1px solid var(--accent);
+    border-radius: 1rem;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-left: 0.5rem;
+}
+
+.themeToggle:hover {
+    background-color: var(--accent-soft);
 }
 
 body::-webkit-scrollbar {
@@ -63,6 +118,10 @@ h1 {
     margin-bottom: 1rem;
 }
 
+.summary {
+    margin-left: auto;
+}
+
 .summary, .hint {
     font-size: 0.65rem;
     color: var(--muted);
@@ -101,7 +160,7 @@ h1 {
     padding: 0.25rem 0.5rem;
     font-size: 1rem;
     text-align: left;
-    background: #fff;
+    background: var(--surface);
     transition: 0s;
 }
 
@@ -144,7 +203,7 @@ select, input[type="date"] {
     font-size: 0.7rem;
     border: 1px solid var(--accent);
     border-radius: 0.25rem;
-    background: #fff;
+    background: var(--surface);
     padding: 0.1rem 0.25rem;
 }
 
@@ -293,7 +352,7 @@ button.chipRemove {
 
 .badge option {
     color: var(--ink);
-    background: #fff;
+    background: var(--surface);
     text-transform: none;
 }
 

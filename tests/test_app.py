@@ -292,3 +292,24 @@ def test_destructive_actions_ask_for_confirmation(client):
     client.post("/category/add", data={"name": "Casa"})
     html = client.get("/").get_data(as_text=True)
     assert html.count("return confirm(") == 2  # excluir tarefa + remover categoria
+
+
+# ---------- Tema escuro (Atividade E) ----------
+def test_theme_toggle_and_early_theme_script(client):
+    html = client.get("/").get_data(as_text=True)
+    assert 'class="themeToggle"' in html and "toggleTheme()" in html
+    # script no <head> aplica o tema salvo antes da renderização (evita "piscar")
+    assert html.index('localStorage.getItem("theme")') < html.index("</head>")
+
+
+def test_404_page_also_applies_saved_theme(client):
+    resp = client.get("/nao-existe")
+    assert resp.status_code == 404
+    assert 'localStorage.getItem("theme")' in resp.get_data(as_text=True)
+
+
+def test_stylesheet_defines_dark_theme(client):
+    css = client.get("/static/css/styles.css").get_data(as_text=True)
+    assert ':root[data-theme="dark"]' in css
+    assert "prefers-color-scheme: dark" in css
+    assert "background: #fff" not in css  # cores fixas viraram variáveis
